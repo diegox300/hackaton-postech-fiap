@@ -56,14 +56,95 @@ function RouteComponent() {
     setQuestoes(novasQuestoes);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log({
-      turma,
-      materia,
-      titulo,
-      questoes,
-    });
+
+    try {
+      if (!turma || !materia || !titulo || questoes.length === 0) {
+        console.error("Por favor, preencha todos os campos.");
+        return;
+      }
+
+      // Inserir a atividade na tabela 'atividades'
+      const { data: atividadeData, error: atividadeError } = await supabase
+        .from("atividades")
+        .insert([
+          {
+            titulo: titulo,
+            turma_id: turma,
+            materia_id: materia,
+          },
+        ])
+        .select("*");
+
+      // Verificar o retorno da inserção
+      console.log("Resposta da inserção da atividade:", atividadeData);
+      console.log("Erro na inserção da atividade:", atividadeError);
+
+      if (atividadeError) {
+        console.error(
+          "Erro ao salvar a atividade:",
+          atividadeError.message || atividadeError.details || atividadeError
+        );
+        return;
+      }
+
+      if (!atividadeData || atividadeData.length === 0) {
+        console.error("A atividade foi salva, mas sem dados retornados.");
+        return;
+      }
+
+      console.log("Atividade salva com sucesso:", atividadeData);
+
+      for (const questao of questoes) {
+        const { data: questaoData, error: questaoError } = await supabase
+          .from("questoes")
+          .insert([
+            {
+              atividade_id: atividadeData[0].id,
+              titulo_questao: questao.titulo,
+            },
+          ])
+          .select("*");
+
+        if (questaoError) {
+          console.error(
+            "Erro ao salvar a questão:",
+            questaoError.message || questaoError.details || questaoError
+          );
+          continue;
+        }
+
+        console.log("Questão salva:", questaoData);
+
+        // Agora salvar as alternativas para a questão
+        for (let i = 0; i < questao.alternativas.length; i++) {
+          const { data: alternativaData, error: alternativaError } =
+            await supabase.from("alternativas").insert([
+              {
+                questao_id: questaoData.id,
+                texto_alternativa: questao.alternativas[i],
+                is_correta: i === 0,
+              },
+            ]);
+
+          if (alternativaError) {
+            console.error(
+              "Erro ao salvar a alternativa:",
+              alternativaError.message ||
+                alternativaError.details ||
+                alternativaError
+            );
+          } else {
+            console.log("Alternativa salva:", alternativaData);
+          }
+        }
+      }
+
+      alert("Atividade cadastrada com sucesso!");
+    } catch (err) {
+      console.error("Erro ao salvar no banco:", err);
+    }
   };
 
   const handleRemoveQuestao = (index: number) => {
@@ -88,7 +169,6 @@ function RouteComponent() {
           {turmas.map((turma) => (
             <option key={turma.id} value={turma.id}>
               {turma.descricao}{" "}
-              {/* Substitua "descricao" pelo campo correto da tabela */}
             </option>
           ))}
         </select>
@@ -104,7 +184,6 @@ function RouteComponent() {
           {materias.map((materia) => (
             <option key={materia.id} value={materia.id}>
               {materia.descricao}{" "}
-              {/* Substitua "nome" pelo campo correto da tabela */}
             </option>
           ))}
         </select>
@@ -118,7 +197,6 @@ function RouteComponent() {
           required
         />
 
-        {/* Questões */}
         {questoes.map((questao, index) => (
           <div key={index} className="bg-gray-200 p-4 rounded-lg space-y-3">
             <div className="flex justify-between items-center mb-2">
