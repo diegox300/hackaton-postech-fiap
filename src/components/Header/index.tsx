@@ -1,10 +1,12 @@
 import { useState, useRef, useEffect } from "react";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import logo from "../../assets/nota10-logo.svg";
+import { supabase } from "../../services/supabaseClient";
 
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
 
   const toggleMenu = () => setIsMenuOpen((prev) => !prev);
 
@@ -34,6 +36,15 @@ export function Header() {
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
+
+  const handleLogout = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      console.error("Erro ao deslogar:", error);
+    } else {
+      navigate({ to: "/" }); // Redireciona para a página inicial ou de login
+    }
+  };
 
   return (
     <nav className="bg-blackOne text-white">
@@ -135,12 +146,12 @@ export function Header() {
               </Link>
             </li>
             <li>
-              <Link
-                to="/logout"
-                className="block py-2 hover:text-greenOne md:py-0"
+              <button
+                onClick={handleLogout}
+                className="block py-2 hover:text-greenOne md:py-0 cursor-pointer"
               >
                 Sair
-              </Link>
+              </button>
             </li>
           </ul>
         </div>
