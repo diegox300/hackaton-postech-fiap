@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "../components/Button";
+import { supabase } from "../services/supabaseClient"; // Certifique-se de ter configurado o cliente Supabase
 
 export const Route = createFileRoute("/criar-atividade")({
   component: RouteComponent,
@@ -13,6 +14,32 @@ function RouteComponent() {
   const [questoes, setQuestoes] = useState([
     { titulo: "", alternativas: ["", "", "", ""] },
   ]);
+  const [turmas, setTurmas] = useState([]); // Estado para armazenar as turmas
+  const [materias, setMaterias] = useState([]); // Estado para armazenar as matérias
+
+  // Busca as turmas no Supabase ao carregar o componente
+  useEffect(() => {
+    const fetchTurmas = async () => {
+      const { data, error } = await supabase.from("turmas").select("*");
+      if (error) {
+        console.error("Erro ao buscar turmas:", error);
+      } else {
+        setTurmas(data || []); // Armazena as turmas no estado
+      }
+    };
+
+    const fetchMaterias = async () => {
+      const { data, error } = await supabase.from("materias").select("*");
+      if (error) {
+        console.error("Erro ao buscar matérias:", error);
+      } else {
+        setMaterias(data || []); // Armazena as matérias no estado
+      }
+    };
+
+    fetchTurmas();
+    fetchMaterias();
+  }, []);
 
   const handleAddQuestao = () => {
     setQuestoes([...questoes, { titulo: "", alternativas: ["", "", "", ""] }]);
@@ -50,6 +77,7 @@ function RouteComponent() {
       <div className="max-w-2xl my-5 mx-auto bg-gray-100 p-6 rounded-3xl space-y-6">
         <h3 className="text-3 font-bold">Nova atividade</h3>
 
+        {/* Select de turmas preenchido dinamicamente */}
         <select
           className="w-full p-3 rounded-md bg-white"
           value={turma}
@@ -57,10 +85,15 @@ function RouteComponent() {
           required
         >
           <option value="">Selecione a turma</option>
-          <option value="turma1">Turma 1</option>
-          <option value="turma2">Turma 2</option>
+          {turmas.map((turma) => (
+            <option key={turma.id} value={turma.id}>
+              {turma.descricao}{" "}
+              {/* Substitua "descricao" pelo campo correto da tabela */}
+            </option>
+          ))}
         </select>
 
+        {/* Select de matérias preenchido dinamicamente */}
         <select
           className="w-full p-3 rounded-md bg-white"
           value={materia}
@@ -68,8 +101,12 @@ function RouteComponent() {
           required
         >
           <option value="">Selecione a matéria</option>
-          <option value="matematica">Matemática</option>
-          <option value="portugues">Português</option>
+          {materias.map((materia) => (
+            <option key={materia.id} value={materia.id}>
+              {materia.descricao}{" "}
+              {/* Substitua "nome" pelo campo correto da tabela */}
+            </option>
+          ))}
         </select>
 
         <input
@@ -91,18 +128,7 @@ function RouteComponent() {
                 onClick={() => handleRemoveQuestao(index)}
                 className="hover:text-purpleOne font-bold cursor-pointer"
               >
-                <svg
-                  width="12"
-                  height="12"
-                  viewBox="0 0 18 18"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M17.4 0.613417C16.88 0.0934167 16.04 0.0934167 15.52 0.613417L8.99996 7.12008L2.47996 0.600083C1.95996 0.080083 1.11996 0.080083 0.599961 0.600083C0.079961 1.12008 0.079961 1.96008 0.599961 2.48008L7.11996 9.00008L0.599961 15.5201C0.079961 16.0401 0.079961 16.8801 0.599961 17.4001C1.11996 17.9201 1.95996 17.9201 2.47996 17.4001L8.99996 10.8801L15.52 17.4001C16.04 17.9201 16.88 17.9201 17.4 17.4001C17.92 16.8801 17.92 16.0401 17.4 15.5201L10.88 9.00008L17.4 2.48008C17.9066 1.97342 17.9066 1.12008 17.4 0.613417Z"
-                    fill="#B2B2B2"
-                  />
-                </svg>
+                Remover
               </button>
             </div>
             <input
